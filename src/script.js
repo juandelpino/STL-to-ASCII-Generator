@@ -4,19 +4,20 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
 import { AsciiEffect } from 'three/examples/jsm/effects/AsciiEffect.js';
 import html2canvas from 'html2canvas';
+import CCapture from 'ccapture.js';
 
 //LightMode
-let lightMode = true
+let lightMode = true;
 
 //Create a clock for rotation
-const clock = new THREE.Clock()
+const clock = new THREE.Clock();
 
 // Set rotate boolean variable
-let rotateModel = false
+let rotateModel = false;
 
 //Ugh, don't ask about this stuff
-var userUploaded = false
-let controls
+var userUploaded = false;
+let controls;
 
 // Creates empty mesh container
 const myMesh = new THREE.Mesh();
@@ -173,10 +174,46 @@ function takeScreenshot() {
     });
 }
 
+document.getElementById('videoButton').addEventListener('click', captureVideo);
+
+function captureVideo() {
+    const capturer = new CCapture({
+        format: 'webm',
+        framerate: 30,
+        name: 'ASCII_Video',
+        quality: 100,
+    });
+
+    capturer.start();
+
+    function captureFrame() {
+        capturer.capture(renderer.domElement);
+
+        if (rotateModel) {
+            const elapsedTime = clock.getElapsedTime();
+            myMesh.rotation.z = (elapsedTime) / 3;
+        }
+
+        render();
+        if (capturer.numFrames < 300) {
+            requestAnimationFrame(captureFrame);
+        } else {
+            capturer.stop();
+            capturer.save();
+        }
+    }
+
+    function render() {
+        effect.render(scene, camera);
+    }
+
+    captureFrame();
+}
+
 document.getElementById('rotateButton').addEventListener('click', rotateMode);
 
 function rotateMode() {
-    rotateModel = !rotateModel
+    rotateModel = !rotateModel;
 }
 
 document.getElementById('updateASCII').addEventListener('click', updateASCII);
@@ -187,8 +224,8 @@ function updateASCII() {
 
     characters = " " + "." + document.getElementById('newASCII').value;
 
-    createEffect()
-    onWindowResize()
+    createEffect();
+    onWindowResize();
 
     document.body.appendChild(effect.domElement)
 
@@ -204,8 +241,8 @@ function resetASCII() {
 
     characters = ' .:-+*=%@#'
 
-    createEffect()
-    onWindowResize()
+    createEffect();
+    onWindowResize();
 
     document.body.appendChild(effect.domElement)
 
@@ -215,13 +252,13 @@ function resetASCII() {
 document.getElementById('lightDark').addEventListener('click', lightDark);
 
 function lightDark() {
-    lightMode = !lightMode
+    lightMode = !lightMode;
     if (lightMode === true) {
         document.getElementById("kofi").style.color = "white";
         document.body.style.backgroundColor = 'black';
 
-        backgroundColor = 'black'
-        ASCIIColor = 'white'
+        backgroundColor = 'black';
+        ASCIIColor = 'white';
 
         effect.domElement.style.color = ASCIIColor;
         effect.domElement.style.backgroundColor = backgroundColor;
@@ -229,8 +266,8 @@ function lightDark() {
         document.getElementById("kofi").style.color = "black";
         document.body.style.backgroundColor = 'white';
 
-        backgroundColor = 'white'
-        ASCIIColor = 'black'
+        backgroundColor = 'white';
+        ASCIIColor = 'black';
 
         effect.domElement.style.color = ASCIIColor;
         effect.domElement.style.backgroundColor = backgroundColor;
@@ -240,11 +277,14 @@ function lightDark() {
 window.addEventListener('resize', onWindowResize);
 
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    sizes.width = window.innerWidth;
+    sizes.height = window.innerHeight;
+
+    camera.aspect = sizes.width / sizes.height;
     camera.updateProjectionMatrix();
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    effect.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(sizes.width, sizes.height);
+    effect.setSize(sizes.width, sizes.height);
 }
 
 function download(filename, text) {
